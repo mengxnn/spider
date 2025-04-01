@@ -14,7 +14,6 @@ import pymysql  # 用于存入MySQL数据库
 college_info = []  # 存储院校信息
 MAX_RETRIES = 5  # 最大允许连续失败次数
 retry_count = 0   # 当前失败次数
-save_lock = threading.Lock()  # 定义锁
 
 #爬取院校信息
 def spider_college_info():
@@ -66,6 +65,7 @@ def spider_college_info():
                 school_info = {
                     'school_name': school.get('name'),
                     'school_id': school.get('school_id'),
+                    'level': school.get('level_name'),  #本科/专科
                     'is985': '是' if school.get('f985', 0) == 1 else '否',
                     'is211': '是' if school.get('f211', 0) == 1 else '否',
                     'isdoubleFC': '是' if school.get('dual_class_name') == "双一流" else '否'
@@ -82,32 +82,19 @@ def spider_college_info():
         if page >= total_pages:
             break
         page += 1  # 进入下一页
-        time.sleep(random.uniform(4, 8))  # 限制请求频率，防止封禁
+        time.sleep(random.uniform(2, 4))  # 限制请求频率，防止封禁
 
 
 def main():
-    max_workers = 3  # 线程池最大线程数
-    threadPool = ThreadPoolExecutor(max_workers)
-
-    #爬取院校信息
-    futures = []
-    futures.append(threadPool.submit(spider_college_info))
-
-    for future in futures:
-        future.result()  # 等待所有任务完成
-
-    threadPool.shutdown()
+    spider_college_info()
     print("数据爬取完成！")
     save_info_to_excel()  # 保存专业分数线数据
 
 
 def save_info_to_excel():
-    with save_lock:
-        # 使用 pandas DataFrame 来去重
-        df_college_info = pd.DataFrame(college_info).drop_duplicates(subset=['school_id'])
-
-        df_college_info.to_excel("所有院校信息.xlsx", index=False)
-        print("✅ 已成功保存院校信息到 '所有院校信息.xlsx'")
+    df_college_info = pd.DataFrame(college_info)
+    df_college_info.to_excel("所有院校信息.xlsx", index=False)
+    print("✅ 已成功保存院校信息到 '所有院校信息.xlsx'")
 
 
 if __name__ == '__main__':
