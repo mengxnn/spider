@@ -1,14 +1,8 @@
 import time
 import pandas as pd
 import requests
-import json
-import os
-from fake_useragent import UserAgent
 import random
-from concurrent.futures import ThreadPoolExecutor  # 多线程爬取
-import threading
 import sys
-import pymysql  # 用于存入MySQL数据库
 
 # 全局变量
 college_info = []  # 存储院校信息
