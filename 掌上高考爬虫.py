@@ -191,7 +191,7 @@ def spider_specialty(school_id, province_id, year):
             break
 
         page += 1  # 进入下一页
-        time.sleep(random.uniform(6.7, 8.5))  # 限制请求频率，防止封禁
+        time.sleep(random.uniform(7.6, 9.3))  # 限制请求频率，防止封禁
 
 
 # 用多线程爬取所有学校和省份数据
@@ -208,7 +208,7 @@ def main():
         for school_id in all_schools:
             for province_id in all_provinces:
                 futures.append(threadPool.submit(spider_specialty, school_id, province_id, year))
-                time.sleep(random.uniform(6.7, 8.5))  # 请求间隔
+                time.sleep(random.uniform(7.6, 9.3))  # 请求间隔
 
     for future in futures:
         future.result()  # 等待所有任务完成
@@ -233,10 +233,8 @@ def save_specialty_to_excel():
             province_name = df["province"].iloc[0] if "province" in df.columns and not df.empty else f"省份_{province_id}"
             province_folder = os.path.join(base_folder, f"{province_id}-{province_name}-专业分数线")
 
-
             os.makedirs(province_folder, exist_ok=True)
 
-            # 只使用省份名称，不再包含年份
             filename = os.path.join(province_folder, "专业分数线.xlsx")
             df.to_excel(filename, index=False)
 
