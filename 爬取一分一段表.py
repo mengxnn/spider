@@ -13,11 +13,11 @@ DB_CONFIG = {
     'host': 'localhost',
     'user': 'root',
     'password': '123456',
-    'database': 'score',
+    'database': 'yfydb',
     'charset': 'utf8mb4'
 }
 
-types = [6457]  # 湖南、湖北、江苏
+types = [6457, 6458, 6461, 6462, 6486, 6487]  # 湖南、湖北、江苏
 data=[]
 
 # 爬取并保存一分一段表数据
