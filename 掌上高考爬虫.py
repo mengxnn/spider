@@ -1,14 +1,14 @@
 import time
 import pandas as pd
 import requests
-import json
 import os
 from fake_useragent import UserAgent
 import random
 from concurrent.futures import ThreadPoolExecutor  # 多线程爬取
 import threading
-import sys
 import pymysql  # 用于存入MySQL数据库
+from sqlalchemy import create_engine
+from sqlalchemy.types import Integer, String  # 新增导入类型
 
 DB_CONFIG = {
     'host': 'localhost',
@@ -22,18 +22,7 @@ DB_CONFIG = {
 specialty_data_by_province = {}  # 存储不同省份的专业分数线数据
 college_data = []  # 存储院校分数线
 specialty_data = []  # 存储专业分数线
-all_schools = [44,385,284,542,504,66,293,57,419,530,
-               286,291,159,134,97,112,106,133,831,459,
-               35,960,240,232,80,170,293,389,287,105,
-               84,787,935,342,364,495,367,544,349,36,
-               515,100,2995,661,99,178,1009,934,119,512,
-               511,96,532,530,533,104,2941,98,391,398,
-               961,1029,388,42,439,1026,128,425,428,372,
-               62,126,61,499,71,108,157,102,103,63,
-               66,68,240,251,109,160,125,132,309,324,
-               421,129,379,33,32,262,139,599,41,59,
-               60,80,46,73,123,140,31,584,38,52,
-               576,143,48,592,91,169,110,86,118]  # 存储所有学校ID
+all_schools = [44,385]  # 存储所有学校ID
 '''
 all_provinces = [11, 12, 13, 14, 15,
                  21, 22, 23, 31, 32,
@@ -42,8 +31,8 @@ all_provinces = [11, 12, 13, 14, 15,
                  46, 50, 51, 52, 53,
                  61, 62, 63, 64, 65]  # 所有省份ID
 '''
-all_provinces = [32,42,43]  # 所有省份ID
-all_years = [2024,2023,2022,2021]
+all_provinces = [32,43]  # 所有省份ID
+all_years = [2022,2021]
 
 MAX_RETRIES = 5  # 最大允许连续失败次数
 retry_count = 0   # 当前失败次数
@@ -142,6 +131,7 @@ def spider_specialty(school_id, province_id, year):
                 with exit_lock:
                     global_exit_flag = True  # 设置全局退出标志
                 save_specialty_to_excel()
+                save_specialty_to_mysql()
                 os._exit(0)  # 终止程序
 
         except Exception as e:
@@ -154,6 +144,7 @@ def spider_specialty(school_id, province_id, year):
             with exit_lock:
                 global_exit_flag = True
             save_specialty_to_excel()
+            save_specialty_to_mysql()
             os._exit(0)
 
         data = response.json().get('data', {})
@@ -212,10 +203,10 @@ def main():
 
     for future in futures:
         future.result()  # 等待所有任务完成
-
     threadPool.shutdown()
 
     save_specialty_to_excel()  # 保存专业分数线数据
+    save_specialty_to_mysql()
     print("数据爬取完成！")
 
 
@@ -239,6 +230,49 @@ def save_specialty_to_excel():
             df.to_excel(filename, index=False)
 
             print(f"✅ {province_name} 数据已保存到 {filename}")
+
+
+def save_specialty_to_mysql():
+    with save_lock:
+        try:
+            engine = create_engine(
+                f"mysql+pymysql://{DB_CONFIG['user']}:{DB_CONFIG['password']}@{DB_CONFIG['host']}/{DB_CONFIG['database']}?charset={DB_CONFIG['charset']}"
+            )
+
+            for province_id, data in specialty_data_by_province.items():
+                df = pd.DataFrame(data)
+                if df.empty:
+                    continue
+
+                province_name = df["province"].iloc[0] if "province" in df.columns and not df.empty else f"省份_{province_id}"
+                table_name = f"{province_name}招生情况"
+
+                # 写入数据库
+                df.to_sql(
+                    name=table_name,
+                    con=engine,
+                    if_exists='replace',  # 若需追加改为'append'
+                    index=False,
+                    dtype={
+                        'year': Integer(),
+                        'school_name': String(20),
+                        'school_id': Integer(),
+                        'province': String(20),
+                        'batch': String(20),
+                        'sub_cat': String(10),
+                        'sub_req': String(20),
+                        'sq_group': String(20),
+                        'major': String(20),
+                        'max_score': String(20),
+                        'min_score': String(20),
+                        'lowest_rank': String(20),
+                    }
+                )
+                print(f"表 {table_name} 写入成功！")
+
+        except Exception as e:
+            print(f"数据库写入失败: {str(e)}")
+
 
 
 

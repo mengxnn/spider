@@ -75,7 +75,6 @@ def clean_score(score_str):
 def save_to_mysql(df):
     try:
         # 数据清洗
-
         df['score'] = df['score'].apply(clean_score)
         # 移除无效数据
         df = df.dropna(subset=['score'])
