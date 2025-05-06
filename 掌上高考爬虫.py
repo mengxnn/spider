@@ -59,7 +59,7 @@ def get_schools_from_db():
         cursor = connection.cursor()
 
         # 执行查询
-        cursor.execute("SELECT school_id FROM 所有院校信息")
+        cursor.execute("SELECT school_id FROM `所有院校信息` ")
         school_ids = [row[0] for row in cursor.fetchall()]
 
         print(f"成功获取{len(school_ids)}条院校ID")

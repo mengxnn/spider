@@ -3,6 +3,17 @@ import pandas as pd
 import requests
 import random
 import sys
+from sqlalchemy.types import Integer, String  # 新增导入类型
+
+from sqlalchemy import create_engine
+
+DB_CONFIG = {
+    'host': 'localhost',
+    'user': 'root',
+    'password': '123456',
+    'database': 'score',
+    'charset': 'utf8mb4'
+}
 
 # 全局变量
 college_info = []  # 存储院校信息
@@ -58,8 +69,13 @@ def spider_college_info():
             for school in items:
                 school_info = {
                     'school_name': school.get('name'),
-                    'school_id': school.get('school_id'),
-                    'level': school.get('level_name'),  #本科/专科
+                    'province': school.get('province_name'), # 所在省份
+                    'city': school.get('city_name'), # 所在城市
+                    'town': school.get('town_name'), # 所在区
+                    'belong': school.get('belong'), # 教育行政主管部门
+                    'level': school.get('level_name'),  # 本科/专科
+                    'type': school.get('type_name'), # 院校类型
+                    'nature': school.get('nature_name'), # 办学类型
                     'is985': '是' if school.get('f985', 0) == 1 else '否',
                     'is211': '是' if school.get('f211', 0) == 1 else '否',
                     'isdoubleFC': '是' if school.get('dual_class_name') == "双一流" else '否'
@@ -82,13 +98,45 @@ def spider_college_info():
 def main():
     spider_college_info()
     print("数据爬取完成！")
-    save_info_to_excel()  # 保存专业分数线数据
-
+    save_info_to_excel()  # 保存院校信息至excel表
+    save_info_to_mysql()  # 保存院校信息至mysql
 
 def save_info_to_excel():
     df_college_info = pd.DataFrame(college_info)
     df_college_info.to_excel("所有院校信息.xlsx", index=False)
     print("✅ 已成功保存院校信息到 '所有院校信息.xlsx'")
+
+def save_info_to_mysql():
+    try:
+        engine = create_engine(
+            f"mysql+pymysql://{DB_CONFIG['user']}:{DB_CONFIG['password']}@{DB_CONFIG['host']}/{DB_CONFIG['database']}?charset={DB_CONFIG['charset']}"
+        )
+        df = pd.DataFrame(college_info)
+        table_name = "所有院校信息"
+        # 写入数据库
+        df.to_sql(
+            name=table_name,
+            con=engine,
+            if_exists='replace',  # 若需追加改为'append'
+            index=False,
+            dtype={
+                'school_name': String(50),
+                'province': String(50),
+                'city': String(50),
+                'town': String(50),
+                'belong': String(50),
+                'level': String(50),
+                'type': String(50),
+                'nature': String(50),
+                'is985': String(5),
+                'is211': String(5),
+                'isdoubleFC': String(5),
+            }
+        )
+        print(f"表 {table_name} 写入成功！")
+
+    except Exception as e:
+        print(f"数据库写入失败: {str(e)}")
 
 
 if __name__ == '__main__':
