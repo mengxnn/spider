@@ -70,12 +70,10 @@ def spider_college_info():
                 school_info = {
                     'school_name': school.get('name'),
                     'province': school.get('province_name'), # 所在省份
-                    'city': school.get('city_name'), # 所在城市
-                    'town': school.get('town_name'), # 所在区
                     'belong': school.get('belong'), # 教育行政主管部门
-                    'level': school.get('level_name'),  # 本科/专科
+                    'level': school.get('level_name'),  # 学历层次（本科/专科）
                     'type': school.get('type_name'), # 院校类型
-                    'nature': school.get('nature_name'), # 办学类型
+                    'nature': school.get('nature_name'), # 办学类型 （公办/民办）
                     'is985': '是' if school.get('f985', 0) == 1 else '否',
                     'is211': '是' if school.get('f211', 0) == 1 else '否',
                     'isdoubleFC': '是' if school.get('dual_class_name') == "双一流" else '否'
